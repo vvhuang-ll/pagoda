@@ -7,7 +7,7 @@ jobs:
           name: Build an amd64 container image
           command: |
             docker build -t huangqw/breeze:alpine-gcc -f golang-gcc/Dockerfile golang-gcc
-            docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze:alpine-gcc go build
+            docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze:alpine-gcc go build -buildvcs=false
             docker build -t huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH .
             docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
             docker push huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH
