@@ -9,7 +9,7 @@ jobs:
             docker build -t huangqw/breeze:alpine-gcc -f golang-gcc/Dockerfile golang-gcc
             docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze:alpine-gcc go build -buildvcs=false
             docker build -t huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH .
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker push huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH
 
   build-tags-amd64:
@@ -22,7 +22,7 @@ jobs:
             docker build -t huangqw/breeze/golang:alpine-gcc -f golang-gcc/Dockerfile golang-gcc
             docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze/golang:alpine-gcc go build
             docker build -t huangqw/breeze/pagoda:amd64-$CIRCLE_TAG .
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker push huangqw/breeze/pagoda:amd64-$CIRCLE_TAG
 
   build-branches-aarch64:
@@ -36,7 +36,7 @@ jobs:
             docker build -t huangqw/breeze/golang:alpine-gcc -f golang-gcc/Dockerfile golang-gcc
             docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze/golang:alpine-gcc go build
             docker build -t huangqw/breeze/pagoda:aarch64-$CIRCLE_BRANCH .
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker push huangqw/breeze/pagoda:aarch64-$CIRCLE_BRANCH
 
   build-tags-aarch64:
@@ -50,7 +50,7 @@ jobs:
             docker build -t huangqw/breeze/golang:alpine-gcc -f golang-gcc/Dockerfile golang-gcc
             docker run -v $(pwd):/go/src/github.com/wise2c-devops/pagoda -w /go/src/github.com/wise2c-devops/pagoda huangqw/breeze/golang:alpine-gcc go build
             docker build -t huangqw/breeze/pagoda:aarch64-$CIRCLE_TAG .
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker push huangqw/breeze/pagoda:aarch64-$CIRCLE_TAG
 
   build-branches-multi-arch:
@@ -62,7 +62,7 @@ jobs:
             docker manifest create huangqw/breeze/pagoda:$CIRCLE_BRANCH huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH huangqw/breeze/pagoda:aarch64-$CIRCLE_BRANCH
             docker manifest annotate huangqw/breeze/pagoda:$CIRCLE_BRANCH huangqw/breeze/pagoda:amd64-$CIRCLE_BRANCH --os linux --arch amd64
             docker manifest annotate huangqw/breeze/pagoda:$CIRCLE_BRANCH huangqw/breeze/pagoda:aarch64-$CIRCLE_BRANCH --os linux --arch arm64
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker manifest push huangqw/breeze/pagoda:$CIRCLE_BRANCH
 
   build-tags-multi-arch:
@@ -74,7 +74,7 @@ jobs:
             docker manifest create huangqw/breeze/pagoda:$CIRCLE_TAG huangqw/breeze/pagoda:amd64-$CIRCLE_TAG huangqw/breeze/pagoda:aarch64-$CIRCLE_TAG
             docker manifest annotate huangqw/breeze/pagoda:$CIRCLE_TAG huangqw/breeze/pagoda:amd64-$CIRCLE_TAG --os linux --arch amd64
             docker manifest annotate huangqw/breeze/pagoda:$CIRCLE_TAG huangqw/breeze/pagoda:aarch64-$CIRCLE_TAG --os linux --arch arm64
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker login -u huangqw -p Hqw@ll1107
             docker manifest push huangqw/breeze/pagoda:$CIRCLE_TAG
 
 workflows:
