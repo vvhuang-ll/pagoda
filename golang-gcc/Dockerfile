@@ -1,4 +1,4 @@
-FROM golang:1.9-alpine
+FROM golang:1.23.4-alpine
 RUN apk add --no-cache --virtual .build-deps \
 	alpine-sdk \
 	cmake \

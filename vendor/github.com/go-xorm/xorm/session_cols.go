@@ -4,6 +4,78 @@
 
 package xorm
 
+import (
+	"reflect"
+	"strings"
+	"time"
+
+	"xorm.io/core"
+)
+
+func setColumnInt(bean interface{}, col *core.Column, t int64) {
+	v, err := col.ValueOf(bean)
+	if err != nil {
+		return
+	}
+	if v.CanSet() {
+		switch v.Type().Kind() {
+		case reflect.Int, reflect.Int64, reflect.Int32:
+			v.SetInt(t)
+		case reflect.Uint, reflect.Uint64, reflect.Uint32:
+			v.SetUint(uint64(t))
+		}
+	}
+}
+
+func setColumnTime(bean interface{}, col *core.Column, t time.Time) {
+	v, err := col.ValueOf(bean)
+	if err != nil {
+		return
+	}
+	if v.CanSet() {
+		switch v.Type().Kind() {
+		case reflect.Struct:
+			v.Set(reflect.ValueOf(t).Convert(v.Type()))
+		case reflect.Int, reflect.Int64, reflect.Int32:
+			v.SetInt(t.Unix())
+		case reflect.Uint, reflect.Uint64, reflect.Uint32:
+			v.SetUint(uint64(t.Unix()))
+		}
+	}
+}
+
+func getFlagForColumn(m map[string]bool, col *core.Column) (val bool, has bool) {
+	if len(m) == 0 {
+		return false, false
+	}
+
+	n := len(col.Name)
+
+	for mk := range m {
+		if len(mk) != n {
+			continue
+		}
+		if strings.EqualFold(mk, col.Name) {
+			return m[mk], true
+		}
+	}
+
+	return false, false
+}
+
+func col2NewCols(columns ...string) []string {
+	newColumns := make([]string, 0, len(columns))
+	for _, col := range columns {
+		col = strings.Replace(col, "`", "", -1)
+		col = strings.Replace(col, `"`, "", -1)
+		ccols := strings.Split(col, ",")
+		for _, c := range ccols {
+			newColumns = append(newColumns, strings.TrimSpace(c))
+		}
+	}
+	return newColumns
+}
+
 // Incr provides a query string like "count = count + 1"
 func (session *Session) Incr(column string, arg ...interface{}) *Session {
 	session.statement.Incr(column, arg...)
@@ -17,7 +89,7 @@ func (session *Session) Decr(column string, arg ...interface{}) *Session {
 }
 
 // SetExpr provides a query string like "column = {expression}"
-func (session *Session) SetExpr(column string, expression string) *Session {
+func (session *Session) SetExpr(column string, expression interface{}) *Session {
 	session.statement.SetExpr(column, expression)
 	return session
 }

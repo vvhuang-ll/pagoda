@@ -9,13 +9,18 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-xorm/builder"
+	"xorm.io/builder"
+	"xorm.io/core"
 )
 
 // Exist returns true if the record exist otherwise return false
 func (session *Session) Exist(bean ...interface{}) (bool, error) {
 	if session.isAutoClose {
 		defer session.Close()
+	}
+
+	if session.statement.lastError != nil {
+		return false, session.statement.lastError
 	}
 
 	var sqlStr string
@@ -29,16 +34,30 @@ func (session *Session) Exist(bean ...interface{}) (bool, error) {
 				return false, ErrTableNotFound
 			}
 
+			tableName = session.statement.Engine.Quote(tableName)
+
 			if session.statement.cond.IsValid() {
 				condSQL, condArgs, err := builder.ToSQL(session.statement.cond)
 				if err != nil {
 					return false, err
 				}
 
-				sqlStr = fmt.Sprintf("SELECT * FROM %s WHERE %s LIMIT 1", tableName, condSQL)
+				if session.engine.dialect.DBType() == core.MSSQL {
+					sqlStr = fmt.Sprintf("SELECT TOP 1 * FROM %s WHERE %s", tableName, condSQL)
+				} else if session.engine.dialect.DBType() == core.ORACLE {
+					sqlStr = fmt.Sprintf("SELECT * FROM %s WHERE (%s) AND ROWNUM=1", tableName, condSQL)
+				} else {
+					sqlStr = fmt.Sprintf("SELECT * FROM %s WHERE %s LIMIT 1", tableName, condSQL)
+				}
 				args = condArgs
 			} else {
-				sqlStr = fmt.Sprintf("SELECT * FROM %s LIMIT 1", tableName)
+				if session.engine.dialect.DBType() == core.MSSQL {
+					sqlStr = fmt.Sprintf("SELECT TOP 1 * FROM %s", tableName)
+				} else if session.engine.dialect.DBType() == core.ORACLE {
+					sqlStr = fmt.Sprintf("SELECT * FROM  %s WHERE ROWNUM=1", tableName)
+				} else {
+					sqlStr = fmt.Sprintf("SELECT * FROM %s LIMIT 1", tableName)
+				}
 				args = []interface{}{}
 			}
 		} else {
@@ -48,7 +67,7 @@ func (session *Session) Exist(bean ...interface{}) (bool, error) {
 			}
 
 			if beanValue.Elem().Kind() == reflect.Struct {
-				if err := session.statement.setRefValue(beanValue.Elem()); err != nil {
+				if err := session.statement.setRefBean(bean[0]); err != nil {
 					return false, err
 				}
 			}

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-xorm/core"
+	"xorm.io/core"
 )
 
 var (
@@ -172,10 +172,31 @@ type mysql struct {
 	allowAllFiles     bool
 	allowOldPasswords bool
 	clientFoundRows   bool
+	rowFormat         string
 }
 
 func (db *mysql) Init(d *core.DB, uri *core.Uri, drivername, dataSourceName string) error {
 	return db.Base.Init(d, db, uri, drivername, dataSourceName)
+}
+
+func (db *mysql) SetParams(params map[string]string) {
+	rowFormat, ok := params["rowFormat"]
+	if ok {
+		var t = strings.ToUpper(rowFormat)
+		switch t {
+		case "COMPACT":
+			fallthrough
+		case "REDUNDANT":
+			fallthrough
+		case "DYNAMIC":
+			fallthrough
+		case "COMPRESSED":
+			db.rowFormat = t
+			break
+		default:
+			break
+		}
+	}
 }
 
 func (db *mysql) SqlType(c *core.Column) string {
@@ -199,7 +220,7 @@ func (db *mysql) SqlType(c *core.Column) string {
 	case core.TimeStampz:
 		res = core.Char
 		c.Length = 64
-	case core.Enum: //mysql enum
+	case core.Enum: // mysql enum
 		res = core.Enum
 		res += "("
 		opts := ""
@@ -208,7 +229,7 @@ func (db *mysql) SqlType(c *core.Column) string {
 		}
 		res += strings.TrimLeft(opts, ",")
 		res += ")"
-	case core.Set: //mysql set
+	case core.Set: // mysql set
 		res = core.Set
 		res += "("
 		opts := ""
@@ -255,10 +276,6 @@ func (db *mysql) IsReserved(name string) bool {
 
 func (db *mysql) Quote(name string) string {
 	return "`" + name + "`"
-}
-
-func (db *mysql) QuoteStr() string {
-	return "`"
 }
 
 func (db *mysql) SupportEngine() bool {
@@ -328,9 +345,9 @@ func (db *mysql) GetColumns(tableName string) ([]string, map[string]*core.Column
 
 		if colDefault != nil {
 			col.Default = *colDefault
-			if col.Default == "" {
-				col.DefaultIsEmpty = true
-			}
+			col.DefaultIsEmpty = false
+		} else {
+			col.DefaultIsEmpty = true
 		}
 
 		cts := strings.Split(colType, "(")
@@ -339,7 +356,7 @@ func (db *mysql) GetColumns(tableName string) ([]string, map[string]*core.Column
 		var len1, len2 int
 		if len(cts) == 2 {
 			idx := strings.Index(cts[1], ")")
-			if colType == core.Enum && cts[1][0] == '\'' { //enum
+			if colType == core.Enum && cts[1][0] == '\'' { // enum
 				options := strings.Split(cts[1][0:idx], ",")
 				col.EnumOptions = make(map[string]int)
 				for k, v := range options {
@@ -372,6 +389,9 @@ func (db *mysql) GetColumns(tableName string) ([]string, map[string]*core.Column
 		if colType == "FLOAT UNSIGNED" {
 			colType = "FLOAT"
 		}
+		if colType == "DOUBLE UNSIGNED" {
+			colType = "DOUBLE"
+		}
 		col.Length = len1
 		col.Length2 = len2
 		if _, ok := core.SqlTypes[colType]; ok {
@@ -384,20 +404,18 @@ func (db *mysql) GetColumns(tableName string) ([]string, map[string]*core.Column
 			col.IsPrimaryKey = true
 		}
 		if colKey == "UNI" {
-			//col.is
+			// col.is
 		}
 
 		if extra == "auto_increment" {
 			col.IsAutoIncrement = true
 		}
 
-		if col.SQLType.IsText() || col.SQLType.IsTime() {
-			if col.Default != "" {
+		if !col.DefaultIsEmpty {
+			if col.SQLType.IsText() {
 				col.Default = "'" + col.Default + "'"
-			} else {
-				if col.DefaultIsEmpty {
-					col.Default = "''"
-				}
+			} else if col.SQLType.IsTime() && col.Default != "CURRENT_TIMESTAMP" {
+				col.Default = "'" + col.Default + "'"
 			}
 		}
 		cols[col.Name] = col
@@ -487,6 +505,60 @@ func (db *mysql) GetIndexes(tableName string) (map[string]*core.Index, error) {
 	return indexes, nil
 }
 
+func (db *mysql) CreateTableSql(table *core.Table, tableName, storeEngine, charset string) string {
+	var sql string
+	sql = "CREATE TABLE IF NOT EXISTS "
+	if tableName == "" {
+		tableName = table.Name
+	}
+
+	sql += db.Quote(tableName)
+	sql += " ("
+
+	if len(table.ColumnsSeq()) > 0 {
+		pkList := table.PrimaryKeys
+
+		for _, colName := range table.ColumnsSeq() {
+			col := table.GetColumn(colName)
+			if col.IsPrimaryKey && len(pkList) == 1 {
+				sql += col.String(db)
+			} else {
+				sql += col.StringNoPk(db)
+			}
+			sql = strings.TrimSpace(sql)
+			if len(col.Comment) > 0 {
+				sql += " COMMENT '" + col.Comment + "'"
+			}
+			sql += ", "
+		}
+
+		if len(pkList) > 1 {
+			sql += "PRIMARY KEY ( "
+			sql += db.Quote(strings.Join(pkList, db.Quote(",")))
+			sql += " ), "
+		}
+
+		sql = sql[:len(sql)-2]
+	}
+	sql += ")"
+
+	if storeEngine != "" {
+		sql += " ENGINE=" + storeEngine
+	}
+
+	if len(charset) == 0 {
+		charset = db.URI().Charset
+	}
+	if len(charset) != 0 {
+		sql += " DEFAULT CHARSET " + charset
+	}
+
+	if db.rowFormat != "" {
+		sql += " ROW_FORMAT=" + db.rowFormat
+	}
+	return sql
+}
+
 func (db *mysql) Filters() []core.Filter {
 	return []core.Filter{&core.IdFilter{}}
 }
@@ -553,7 +625,7 @@ func (p *mysqlDriver) Parse(driverName, dataSourceName string) (*core.Uri, error
 			`\/(?P<dbname>.*?)` + // /dbname
 			`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
 	matches := dsnPattern.FindStringSubmatch(dataSourceName)
-	//tlsConfigRegister := make(map[string]*tls.Config)
+	// tlsConfigRegister := make(map[string]*tls.Config)
 	names := dsnPattern.SubexpNames()
 
 	uri := &core.Uri{DbType: core.MYSQL}

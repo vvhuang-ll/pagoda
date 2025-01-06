@@ -8,42 +8,41 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/go-xorm/core"
+	"xorm.io/core"
 )
 
 // from http://www.postgresql.org/docs/current/static/sql-keywords-appendix.html
 var (
 	postgresReservedWords = map[string]bool{
-		"A":                     true,
-		"ABORT":                 true,
-		"ABS":                   true,
-		"ABSENT":                true,
-		"ABSOLUTE":              true,
-		"ACCESS":                true,
-		"ACCORDING":             true,
-		"ACTION":                true,
-		"ADA":                   true,
-		"ADD":                   true,
-		"ADMIN":                 true,
-		"AFTER":                 true,
-		"AGGREGATE":             true,
-		"ALL":                   true,
-		"ALLOCATE":              true,
-		"ALSO":                  true,
-		"ALTER":                 true,
-		"ALWAYS":                true,
-		"ANALYSE":               true,
-		"ANALYZE":               true,
-		"AND":                   true,
-		"ANY":                   true,
-		"ARE":                   true,
-		"ARRAY":                 true,
-		"ARRAY_AGG":             true,
-		"ARRAY_MAX_CARDINALITY": true,
+		"A":                                true,
+		"ABORT":                            true,
+		"ABS":                              true,
+		"ABSENT":                           true,
+		"ABSOLUTE":                         true,
+		"ACCESS":                           true,
+		"ACCORDING":                        true,
+		"ACTION":                           true,
+		"ADA":                              true,
+		"ADD":                              true,
+		"ADMIN":                            true,
+		"AFTER":                            true,
+		"AGGREGATE":                        true,
+		"ALL":                              true,
+		"ALLOCATE":                         true,
+		"ALSO":                             true,
+		"ALTER":                            true,
+		"ALWAYS":                           true,
+		"ANALYSE":                          true,
+		"ANALYZE":                          true,
+		"AND":                              true,
+		"ANY":                              true,
+		"ARE":                              true,
+		"ARRAY":                            true,
+		"ARRAY_AGG":                        true,
+		"ARRAY_MAX_CARDINALITY":            true,
 		"AS":                               true,
 		"ASC":                              true,
 		"ASENSITIVE":                       true,
@@ -172,607 +171,619 @@ var (
 		"DATABASE":                         true,
 		"DATALINK":                         true,
 		"DATE":                             true,
-		"DATETIME_INTERVAL_CODE":      true,
-		"DATETIME_INTERVAL_PRECISION": true,
-		"DAY":                        true,
-		"DB":                         true,
-		"DEALLOCATE":                 true,
-		"DEC":                        true,
-		"DECIMAL":                    true,
-		"DECLARE":                    true,
-		"DEFAULT":                    true,
-		"DEFAULTS":                   true,
-		"DEFERRABLE":                 true,
-		"DEFERRED":                   true,
-		"DEFINED":                    true,
-		"DEFINER":                    true,
-		"DEGREE":                     true,
-		"DELETE":                     true,
-		"DELIMITER":                  true,
-		"DELIMITERS":                 true,
-		"DENSE_RANK":                 true,
-		"DEPTH":                      true,
-		"DEREF":                      true,
-		"DERIVED":                    true,
-		"DESC":                       true,
-		"DESCRIBE":                   true,
-		"DESCRIPTOR":                 true,
-		"DETERMINISTIC":              true,
-		"DIAGNOSTICS":                true,
-		"DICTIONARY":                 true,
-		"DISABLE":                    true,
-		"DISCARD":                    true,
-		"DISCONNECT":                 true,
-		"DISPATCH":                   true,
-		"DISTINCT":                   true,
-		"DLNEWCOPY":                  true,
-		"DLPREVIOUSCOPY":             true,
-		"DLURLCOMPLETE":              true,
-		"DLURLCOMPLETEONLY":          true,
-		"DLURLCOMPLETEWRITE":         true,
-		"DLURLPATH":                  true,
-		"DLURLPATHONLY":              true,
-		"DLURLPATHWRITE":             true,
-		"DLURLSCHEME":                true,
-		"DLURLSERVER":                true,
-		"DLVALUE":                    true,
-		"DO":                         true,
-		"DOCUMENT":                   true,
-		"DOMAIN":                     true,
-		"DOUBLE":                     true,
-		"DROP":                       true,
-		"DYNAMIC":                    true,
-		"DYNAMIC_FUNCTION":           true,
-		"DYNAMIC_FUNCTION_CODE":      true,
-		"EACH":                       true,
-		"ELEMENT":                    true,
-		"ELSE":                       true,
-		"EMPTY":                      true,
-		"ENABLE":                     true,
-		"ENCODING":                   true,
-		"ENCRYPTED":                  true,
-		"END":                        true,
-		"END-EXEC":                   true,
-		"END_FRAME":                  true,
-		"END_PARTITION":              true,
-		"ENFORCED":                   true,
-		"ENUM":                       true,
-		"EQUALS":                     true,
-		"ESCAPE":                     true,
-		"EVENT":                      true,
-		"EVERY":                      true,
-		"EXCEPT":                     true,
-		"EXCEPTION":                  true,
-		"EXCLUDE":                    true,
-		"EXCLUDING":                  true,
-		"EXCLUSIVE":                  true,
-		"EXEC":                       true,
-		"EXECUTE":                    true,
-		"EXISTS":                     true,
-		"EXP":                        true,
-		"EXPLAIN":                    true,
-		"EXPRESSION":                 true,
-		"EXTENSION":                  true,
-		"EXTERNAL":                   true,
-		"EXTRACT":                    true,
-		"FALSE":                      true,
-		"FAMILY":                     true,
-		"FETCH":                      true,
-		"FILE":                       true,
-		"FILTER":                     true,
-		"FINAL":                      true,
-		"FIRST":                      true,
-		"FIRST_VALUE":                true,
-		"FLAG":                       true,
-		"FLOAT":                      true,
-		"FLOOR":                      true,
-		"FOLLOWING":                  true,
-		"FOR":                        true,
-		"FORCE":                      true,
-		"FOREIGN":                    true,
-		"FORTRAN":                    true,
-		"FORWARD":                    true,
-		"FOUND":                      true,
-		"FRAME_ROW":                  true,
-		"FREE":                       true,
-		"FREEZE":                     true,
-		"FROM":                       true,
-		"FS":                         true,
-		"FULL":                       true,
-		"FUNCTION":                   true,
-		"FUNCTIONS":                  true,
-		"FUSION":                     true,
-		"G":                          true,
-		"GENERAL":                    true,
-		"GENERATED":                  true,
-		"GET":                        true,
-		"GLOBAL":                     true,
-		"GO":                         true,
-		"GOTO":                       true,
-		"GRANT":                      true,
-		"GRANTED":                    true,
-		"GREATEST":                   true,
-		"GROUP":                      true,
-		"GROUPING":                   true,
-		"GROUPS":                     true,
-		"HANDLER":                    true,
-		"HAVING":                     true,
-		"HEADER":                     true,
-		"HEX":                        true,
-		"HIERARCHY":                  true,
-		"HOLD":                       true,
-		"HOUR":                       true,
-		"ID":                         true,
-		"IDENTITY":                   true,
-		"IF":                         true,
-		"IGNORE":                     true,
-		"ILIKE":                      true,
-		"IMMEDIATE":                  true,
-		"IMMEDIATELY":                true,
-		"IMMUTABLE":                  true,
-		"IMPLEMENTATION":             true,
-		"IMPLICIT":                   true,
-		"IMPORT":                     true,
-		"IN":                         true,
-		"INCLUDING":                  true,
-		"INCREMENT":                  true,
-		"INDENT":                     true,
-		"INDEX":                      true,
-		"INDEXES":                    true,
-		"INDICATOR":                  true,
-		"INHERIT":                    true,
-		"INHERITS":                   true,
-		"INITIALLY":                  true,
-		"INLINE":                     true,
-		"INNER":                      true,
-		"INOUT":                      true,
-		"INPUT":                      true,
-		"INSENSITIVE":                true,
-		"INSERT":                     true,
-		"INSTANCE":                   true,
-		"INSTANTIABLE":               true,
-		"INSTEAD":                    true,
-		"INT":                        true,
-		"INTEGER":                    true,
-		"INTEGRITY":                  true,
-		"INTERSECT":                  true,
-		"INTERSECTION":               true,
-		"INTERVAL":                   true,
-		"INTO":                       true,
-		"INVOKER":                    true,
-		"IS":                         true,
-		"ISNULL":                     true,
-		"ISOLATION":                  true,
-		"JOIN":                       true,
-		"K":                          true,
-		"KEY":                        true,
-		"KEY_MEMBER":                 true,
-		"KEY_TYPE":                   true,
-		"LABEL":                      true,
-		"LAG":                        true,
-		"LANGUAGE":                   true,
-		"LARGE":                      true,
-		"LAST":                       true,
-		"LAST_VALUE":                 true,
-		"LATERAL":                    true,
-		"LC_COLLATE":                 true,
-		"LC_CTYPE":                   true,
-		"LEAD":                       true,
-		"LEADING":                    true,
-		"LEAKPROOF":                  true,
-		"LEAST":                      true,
-		"LEFT":                       true,
-		"LENGTH":                     true,
-		"LEVEL":                      true,
-		"LIBRARY":                    true,
-		"LIKE":                       true,
-		"LIKE_REGEX":                 true,
-		"LIMIT":                      true,
-		"LINK":                       true,
-		"LISTEN":                     true,
-		"LN":                         true,
-		"LOAD":                       true,
-		"LOCAL":                      true,
-		"LOCALTIME":                  true,
-		"LOCALTIMESTAMP":             true,
-		"LOCATION":                   true,
-		"LOCATOR":                    true,
-		"LOCK":                       true,
-		"LOWER":                      true,
-		"M":                          true,
-		"MAP":                        true,
-		"MAPPING":                    true,
-		"MATCH":                      true,
-		"MATCHED":                    true,
-		"MATERIALIZED":               true,
-		"MAX":                        true,
-		"MAXVALUE":                   true,
-		"MAX_CARDINALITY":            true,
-		"MEMBER":                     true,
-		"MERGE":                      true,
-		"MESSAGE_LENGTH":             true,
-		"MESSAGE_OCTET_LENGTH":       true,
-		"MESSAGE_TEXT":               true,
-		"METHOD":                     true,
-		"MIN":                        true,
-		"MINUTE":                     true,
-		"MINVALUE":                   true,
-		"MOD":                        true,
-		"MODE":                       true,
-		"MODIFIES":                   true,
-		"MODULE":                     true,
-		"MONTH":                      true,
-		"MORE":                       true,
-		"MOVE":                       true,
-		"MULTISET":                   true,
-		"MUMPS":                      true,
-		"NAME":                       true,
-		"NAMES":                      true,
-		"NAMESPACE":                  true,
-		"NATIONAL":                   true,
-		"NATURAL":                    true,
-		"NCHAR":                      true,
-		"NCLOB":                      true,
-		"NESTING":                    true,
-		"NEW":                        true,
-		"NEXT":                       true,
-		"NFC":                        true,
-		"NFD":                        true,
-		"NFKC":                       true,
-		"NFKD":                       true,
-		"NIL":                        true,
-		"NO":                         true,
-		"NONE":                       true,
-		"NORMALIZE":                  true,
-		"NORMALIZED":                 true,
-		"NOT":                        true,
-		"NOTHING":                    true,
-		"NOTIFY":                     true,
-		"NOTNULL":                    true,
-		"NOWAIT":                     true,
-		"NTH_VALUE":                  true,
-		"NTILE":                      true,
-		"NULL":                       true,
-		"NULLABLE":                   true,
-		"NULLIF":                     true,
-		"NULLS":                      true,
-		"NUMBER":                     true,
-		"NUMERIC":                    true,
-		"OBJECT":                     true,
-		"OCCURRENCES_REGEX":          true,
-		"OCTETS":                     true,
-		"OCTET_LENGTH":               true,
-		"OF":                         true,
-		"OFF":                        true,
-		"OFFSET":                     true,
-		"OIDS":                       true,
-		"OLD":                        true,
-		"ON":                         true,
-		"ONLY":                       true,
-		"OPEN":                       true,
-		"OPERATOR":                   true,
-		"OPTION":                     true,
-		"OPTIONS":                    true,
-		"OR":                         true,
-		"ORDER":                      true,
-		"ORDERING":                   true,
-		"ORDINALITY":                 true,
-		"OTHERS":                     true,
-		"OUT":                        true,
-		"OUTER":                      true,
-		"OUTPUT":                     true,
-		"OVER":                       true,
-		"OVERLAPS":                   true,
-		"OVERLAY":                    true,
-		"OVERRIDING":                 true,
-		"OWNED":                      true,
-		"OWNER":                      true,
-		"P":                          true,
-		"PAD":                        true,
-		"PARAMETER":                  true,
-		"PARAMETER_MODE":             true,
-		"PARAMETER_NAME":             true,
-		"PARAMETER_ORDINAL_POSITION": true,
-		"PARAMETER_SPECIFIC_CATALOG": true,
-		"PARAMETER_SPECIFIC_NAME":    true,
-		"PARAMETER_SPECIFIC_SCHEMA":  true,
-		"PARSER":                     true,
-		"PARTIAL":                    true,
-		"PARTITION":                  true,
-		"PASCAL":                     true,
-		"PASSING":                    true,
-		"PASSTHROUGH":                true,
-		"PASSWORD":                   true,
-		"PATH":                       true,
-		"PERCENT":                    true,
-		"PERCENTILE_CONT":            true,
-		"PERCENTILE_DISC":            true,
-		"PERCENT_RANK":               true,
-		"PERIOD":                     true,
-		"PERMISSION":                 true,
-		"PLACING":                    true,
-		"PLANS":                      true,
-		"PLI":                        true,
-		"PORTION":                    true,
-		"POSITION":                   true,
-		"POSITION_REGEX":             true,
-		"POWER":                      true,
-		"PRECEDES":                   true,
-		"PRECEDING":                  true,
-		"PRECISION":                  true,
-		"PREPARE":                    true,
-		"PREPARED":                   true,
-		"PRESERVE":                   true,
-		"PRIMARY":                    true,
-		"PRIOR":                      true,
-		"PRIVILEGES":                 true,
-		"PROCEDURAL":                 true,
-		"PROCEDURE":                  true,
-		"PROGRAM":                    true,
-		"PUBLIC":                     true,
-		"QUOTE":                      true,
-		"RANGE":                      true,
-		"RANK":                       true,
-		"READ":                       true,
-		"READS":                      true,
-		"REAL":                       true,
-		"REASSIGN":                   true,
-		"RECHECK":                    true,
-		"RECOVERY":                   true,
-		"RECURSIVE":                  true,
-		"REF":                        true,
-		"REFERENCES":                 true,
-		"REFERENCING":                true,
-		"REFRESH":                    true,
-		"REGR_AVGX":                  true,
-		"REGR_AVGY":                  true,
-		"REGR_COUNT":                 true,
-		"REGR_INTERCEPT":             true,
-		"REGR_R2":                    true,
-		"REGR_SLOPE":                 true,
-		"REGR_SXX":                   true,
-		"REGR_SXY":                   true,
-		"REGR_SYY":                   true,
-		"REINDEX":                    true,
-		"RELATIVE":                   true,
-		"RELEASE":                    true,
-		"RENAME":                     true,
-		"REPEATABLE":                 true,
-		"REPLACE":                    true,
-		"REPLICA":                    true,
-		"REQUIRING":                  true,
-		"RESET":                      true,
-		"RESPECT":                    true,
-		"RESTART":                    true,
-		"RESTORE":                    true,
-		"RESTRICT":                   true,
-		"RESULT":                     true,
-		"RETURN":                     true,
-		"RETURNED_CARDINALITY":       true,
-		"RETURNED_LENGTH":            true,
-		"RETURNED_OCTET_LENGTH":      true,
-		"RETURNED_SQLSTATE":          true,
-		"RETURNING":                  true,
-		"RETURNS":                    true,
-		"REVOKE":                     true,
-		"RIGHT":                      true,
-		"ROLE":                       true,
-		"ROLLBACK":                   true,
-		"ROLLUP":                     true,
-		"ROUTINE":                    true,
-		"ROUTINE_CATALOG":            true,
-		"ROUTINE_NAME":               true,
-		"ROUTINE_SCHEMA":             true,
-		"ROW":                        true,
-		"ROWS":                       true,
-		"ROW_COUNT":                  true,
-		"ROW_NUMBER":                 true,
-		"RULE":                       true,
-		"SAVEPOINT":                  true,
-		"SCALE":                      true,
-		"SCHEMA":                     true,
-		"SCHEMA_NAME":                true,
-		"SCOPE":                      true,
-		"SCOPE_CATALOG":              true,
-		"SCOPE_NAME":                 true,
-		"SCOPE_SCHEMA":               true,
-		"SCROLL":                     true,
-		"SEARCH":                     true,
-		"SECOND":                     true,
-		"SECTION":                    true,
-		"SECURITY":                   true,
-		"SELECT":                     true,
-		"SELECTIVE":                  true,
-		"SELF":                       true,
-		"SENSITIVE":                  true,
-		"SEQUENCE":                   true,
-		"SEQUENCES":                  true,
-		"SERIALIZABLE":               true,
-		"SERVER":                     true,
-		"SERVER_NAME":                true,
-		"SESSION":                    true,
-		"SESSION_USER":               true,
-		"SET":                        true,
-		"SETOF":                      true,
-		"SETS":                       true,
-		"SHARE":                      true,
-		"SHOW":                       true,
-		"SIMILAR":                    true,
-		"SIMPLE":                     true,
-		"SIZE":                       true,
-		"SMALLINT":                   true,
-		"SNAPSHOT":                   true,
-		"SOME":                       true,
-		"SOURCE":                     true,
-		"SPACE":                      true,
-		"SPECIFIC":                   true,
-		"SPECIFICTYPE":               true,
-		"SPECIFIC_NAME":              true,
-		"SQL":                        true,
-		"SQLCODE":                    true,
-		"SQLERROR":                   true,
-		"SQLEXCEPTION":               true,
-		"SQLSTATE":                   true,
-		"SQLWARNING":                 true,
-		"SQRT":                       true,
-		"STABLE":                     true,
-		"STANDALONE":                 true,
-		"START":                      true,
-		"STATE":                      true,
-		"STATEMENT":                  true,
-		"STATIC":                     true,
-		"STATISTICS":                 true,
-		"STDDEV_POP":                 true,
-		"STDDEV_SAMP":                true,
-		"STDIN":                      true,
-		"STDOUT":                     true,
-		"STORAGE":                    true,
-		"STRICT":                     true,
-		"STRIP":                      true,
-		"STRUCTURE":                  true,
-		"STYLE":                      true,
-		"SUBCLASS_ORIGIN":            true,
-		"SUBMULTISET":                true,
-		"SUBSTRING":                  true,
-		"SUBSTRING_REGEX":            true,
-		"SUCCEEDS":                   true,
-		"SUM":                        true,
-		"SYMMETRIC":                  true,
-		"SYSID":                      true,
-		"SYSTEM":                     true,
-		"SYSTEM_TIME":                true,
-		"SYSTEM_USER":                true,
-		"T":                          true,
-		"TABLE":                      true,
-		"TABLES":                     true,
-		"TABLESAMPLE":                true,
-		"TABLESPACE":                 true,
-		"TABLE_NAME":                 true,
-		"TEMP":                       true,
-		"TEMPLATE":                   true,
-		"TEMPORARY":                  true,
-		"TEXT":                       true,
-		"THEN":                       true,
-		"TIES":                       true,
-		"TIME":                       true,
-		"TIMESTAMP":                  true,
-		"TIMEZONE_HOUR":              true,
-		"TIMEZONE_MINUTE":            true,
-		"TO":                         true,
-		"TOKEN":                      true,
-		"TOP_LEVEL_COUNT":            true,
-		"TRAILING":                   true,
-		"TRANSACTION":                true,
-		"TRANSACTIONS_COMMITTED":     true,
-		"TRANSACTIONS_ROLLED_BACK":   true,
-		"TRANSACTION_ACTIVE":         true,
-		"TRANSFORM":                  true,
-		"TRANSFORMS":                 true,
-		"TRANSLATE":                  true,
-		"TRANSLATE_REGEX":            true,
-		"TRANSLATION":                true,
-		"TREAT":                      true,
-		"TRIGGER":                    true,
-		"TRIGGER_CATALOG":            true,
-		"TRIGGER_NAME":               true,
-		"TRIGGER_SCHEMA":             true,
-		"TRIM":                       true,
-		"TRIM_ARRAY":                 true,
-		"TRUE":                       true,
-		"TRUNCATE":                   true,
-		"TRUSTED":                    true,
-		"TYPE":                       true,
-		"TYPES":                      true,
-		"UESCAPE":                    true,
-		"UNBOUNDED":                  true,
-		"UNCOMMITTED":                true,
-		"UNDER":                      true,
-		"UNENCRYPTED":                true,
-		"UNION":                      true,
-		"UNIQUE":                     true,
-		"UNKNOWN":                    true,
-		"UNLINK":                     true,
-		"UNLISTEN":                   true,
-		"UNLOGGED":                   true,
-		"UNNAMED":                    true,
-		"UNNEST":                     true,
-		"UNTIL":                      true,
-		"UNTYPED":                    true,
-		"UPDATE":                     true,
-		"UPPER":                      true,
-		"URI":                        true,
-		"USAGE":                      true,
-		"USER":                       true,
-		"USER_DEFINED_TYPE_CATALOG": true,
-		"USER_DEFINED_TYPE_CODE":    true,
-		"USER_DEFINED_TYPE_NAME":    true,
-		"USER_DEFINED_TYPE_SCHEMA":  true,
-		"USING":                     true,
-		"VACUUM":                    true,
-		"VALID":                     true,
-		"VALIDATE":                  true,
-		"VALIDATOR":                 true,
-		"VALUE":                     true,
-		"VALUES":                    true,
-		"VALUE_OF":                  true,
-		"VARBINARY":                 true,
-		"VARCHAR":                   true,
-		"VARIADIC":                  true,
-		"VARYING":                   true,
-		"VAR_POP":                   true,
-		"VAR_SAMP":                  true,
-		"VERBOSE":                   true,
-		"VERSION":                   true,
-		"VERSIONING":                true,
-		"VIEW":                      true,
-		"VOLATILE":                  true,
-		"WHEN":                      true,
-		"WHENEVER":                  true,
-		"WHERE":                     true,
-		"WHITESPACE":                true,
-		"WIDTH_BUCKET":              true,
-		"WINDOW":                    true,
-		"WITH":                      true,
-		"WITHIN":                    true,
-		"WITHOUT":                   true,
-		"WORK":                      true,
-		"WRAPPER":                   true,
-		"WRITE":                     true,
-		"XML":                       true,
-		"XMLAGG":                    true,
-		"XMLATTRIBUTES":             true,
-		"XMLBINARY":                 true,
-		"XMLCAST":                   true,
-		"XMLCOMMENT":                true,
-		"XMLCONCAT":                 true,
-		"XMLDECLARATION":            true,
-		"XMLDOCUMENT":               true,
-		"XMLELEMENT":                true,
-		"XMLEXISTS":                 true,
-		"XMLFOREST":                 true,
-		"XMLITERATE":                true,
-		"XMLNAMESPACES":             true,
-		"XMLPARSE":                  true,
-		"XMLPI":                     true,
-		"XMLQUERY":                  true,
-		"XMLROOT":                   true,
-		"XMLSCHEMA":                 true,
-		"XMLSERIALIZE":              true,
-		"XMLTABLE":                  true,
-		"XMLTEXT":                   true,
-		"XMLVALIDATE":               true,
-		"YEAR":                      true,
-		"YES":                       true,
-		"ZONE":                      true,
+		"DATETIME_INTERVAL_CODE":           true,
+		"DATETIME_INTERVAL_PRECISION":      true,
+		"DAY":                              true,
+		"DB":                               true,
+		"DEALLOCATE":                       true,
+		"DEC":                              true,
+		"DECIMAL":                          true,
+		"DECLARE":                          true,
+		"DEFAULT":                          true,
+		"DEFAULTS":                         true,
+		"DEFERRABLE":                       true,
+		"DEFERRED":                         true,
+		"DEFINED":                          true,
+		"DEFINER":                          true,
+		"DEGREE":                           true,
+		"DELETE":                           true,
+		"DELIMITER":                        true,
+		"DELIMITERS":                       true,
+		"DENSE_RANK":                       true,
+		"DEPTH":                            true,
+		"DEREF":                            true,
+		"DERIVED":                          true,
+		"DESC":                             true,
+		"DESCRIBE":                         true,
+		"DESCRIPTOR":                       true,
+		"DETERMINISTIC":                    true,
+		"DIAGNOSTICS":                      true,
+		"DICTIONARY":                       true,
+		"DISABLE":                          true,
+		"DISCARD":                          true,
+		"DISCONNECT":                       true,
+		"DISPATCH":                         true,
+		"DISTINCT":                         true,
+		"DLNEWCOPY":                        true,
+		"DLPREVIOUSCOPY":                   true,
+		"DLURLCOMPLETE":                    true,
+		"DLURLCOMPLETEONLY":                true,
+		"DLURLCOMPLETEWRITE":               true,
+		"DLURLPATH":                        true,
+		"DLURLPATHONLY":                    true,
+		"DLURLPATHWRITE":                   true,
+		"DLURLSCHEME":                      true,
+		"DLURLSERVER":                      true,
+		"DLVALUE":                          true,
+		"DO":                               true,
+		"DOCUMENT":                         true,
+		"DOMAIN":                           true,
+		"DOUBLE":                           true,
+		"DROP":                             true,
+		"DYNAMIC":                          true,
+		"DYNAMIC_FUNCTION":                 true,
+		"DYNAMIC_FUNCTION_CODE":            true,
+		"EACH":                             true,
+		"ELEMENT":                          true,
+		"ELSE":                             true,
+		"EMPTY":                            true,
+		"ENABLE":                           true,
+		"ENCODING":                         true,
+		"ENCRYPTED":                        true,
+		"END":                              true,
+		"END-EXEC":                         true,
+		"END_FRAME":                        true,
+		"END_PARTITION":                    true,
+		"ENFORCED":                         true,
+		"ENUM":                             true,
+		"EQUALS":                           true,
+		"ESCAPE":                           true,
+		"EVENT":                            true,
+		"EVERY":                            true,
+		"EXCEPT":                           true,
+		"EXCEPTION":                        true,
+		"EXCLUDE":                          true,
+		"EXCLUDING":                        true,
+		"EXCLUSIVE":                        true,
+		"EXEC":                             true,
+		"EXECUTE":                          true,
+		"EXISTS":                           true,
+		"EXP":                              true,
+		"EXPLAIN":                          true,
+		"EXPRESSION":                       true,
+		"EXTENSION":                        true,
+		"EXTERNAL":                         true,
+		"EXTRACT":                          true,
+		"FALSE":                            true,
+		"FAMILY":                           true,
+		"FETCH":                            true,
+		"FILE":                             true,
+		"FILTER":                           true,
+		"FINAL":                            true,
+		"FIRST":                            true,
+		"FIRST_VALUE":                      true,
+		"FLAG":                             true,
+		"FLOAT":                            true,
+		"FLOOR":                            true,
+		"FOLLOWING":                        true,
+		"FOR":                              true,
+		"FORCE":                            true,
+		"FOREIGN":                          true,
+		"FORTRAN":                          true,
+		"FORWARD":                          true,
+		"FOUND":                            true,
+		"FRAME_ROW":                        true,
+		"FREE":                             true,
+		"FREEZE":                           true,
+		"FROM":                             true,
+		"FS":                               true,
+		"FULL":                             true,
+		"FUNCTION":                         true,
+		"FUNCTIONS":                        true,
+		"FUSION":                           true,
+		"G":                                true,
+		"GENERAL":                          true,
+		"GENERATED":                        true,
+		"GET":                              true,
+		"GLOBAL":                           true,
+		"GO":                               true,
+		"GOTO":                             true,
+		"GRANT":                            true,
+		"GRANTED":                          true,
+		"GREATEST":                         true,
+		"GROUP":                            true,
+		"GROUPING":                         true,
+		"GROUPS":                           true,
+		"HANDLER":                          true,
+		"HAVING":                           true,
+		"HEADER":                           true,
+		"HEX":                              true,
+		"HIERARCHY":                        true,
+		"HOLD":                             true,
+		"HOUR":                             true,
+		"ID":                               true,
+		"IDENTITY":                         true,
+		"IF":                               true,
+		"IGNORE":                           true,
+		"ILIKE":                            true,
+		"IMMEDIATE":                        true,
+		"IMMEDIATELY":                      true,
+		"IMMUTABLE":                        true,
+		"IMPLEMENTATION":                   true,
+		"IMPLICIT":                         true,
+		"IMPORT":                           true,
+		"IN":                               true,
+		"INCLUDING":                        true,
+		"INCREMENT":                        true,
+		"INDENT":                           true,
+		"INDEX":                            true,
+		"INDEXES":                          true,
+		"INDICATOR":                        true,
+		"INHERIT":                          true,
+		"INHERITS":                         true,
+		"INITIALLY":                        true,
+		"INLINE":                           true,
+		"INNER":                            true,
+		"INOUT":                            true,
+		"INPUT":                            true,
+		"INSENSITIVE":                      true,
+		"INSERT":                           true,
+		"INSTANCE":                         true,
+		"INSTANTIABLE":                     true,
+		"INSTEAD":                          true,
+		"INT":                              true,
+		"INTEGER":                          true,
+		"INTEGRITY":                        true,
+		"INTERSECT":                        true,
+		"INTERSECTION":                     true,
+		"INTERVAL":                         true,
+		"INTO":                             true,
+		"INVOKER":                          true,
+		"IS":                               true,
+		"ISNULL":                           true,
+		"ISOLATION":                        true,
+		"JOIN":                             true,
+		"K":                                true,
+		"KEY":                              true,
+		"KEY_MEMBER":                       true,
+		"KEY_TYPE":                         true,
+		"LABEL":                            true,
+		"LAG":                              true,
+		"LANGUAGE":                         true,
+		"LARGE":                            true,
+		"LAST":                             true,
+		"LAST_VALUE":                       true,
+		"LATERAL":                          true,
+		"LC_COLLATE":                       true,
+		"LC_CTYPE":                         true,
+		"LEAD":                             true,
+		"LEADING":                          true,
+		"LEAKPROOF":                        true,
+		"LEAST":                            true,
+		"LEFT":                             true,
+		"LENGTH":                           true,
+		"LEVEL":                            true,
+		"LIBRARY":                          true,
+		"LIKE":                             true,
+		"LIKE_REGEX":                       true,
+		"LIMIT":                            true,
+		"LINK":                             true,
+		"LISTEN":                           true,
+		"LN":                               true,
+		"LOAD":                             true,
+		"LOCAL":                            true,
+		"LOCALTIME":                        true,
+		"LOCALTIMESTAMP":                   true,
+		"LOCATION":                         true,
+		"LOCATOR":                          true,
+		"LOCK":                             true,
+		"LOWER":                            true,
+		"M":                                true,
+		"MAP":                              true,
+		"MAPPING":                          true,
+		"MATCH":                            true,
+		"MATCHED":                          true,
+		"MATERIALIZED":                     true,
+		"MAX":                              true,
+		"MAXVALUE":                         true,
+		"MAX_CARDINALITY":                  true,
+		"MEMBER":                           true,
+		"MERGE":                            true,
+		"MESSAGE_LENGTH":                   true,
+		"MESSAGE_OCTET_LENGTH":             true,
+		"MESSAGE_TEXT":                     true,
+		"METHOD":                           true,
+		"MIN":                              true,
+		"MINUTE":                           true,
+		"MINVALUE":                         true,
+		"MOD":                              true,
+		"MODE":                             true,
+		"MODIFIES":                         true,
+		"MODULE":                           true,
+		"MONTH":                            true,
+		"MORE":                             true,
+		"MOVE":                             true,
+		"MULTISET":                         true,
+		"MUMPS":                            true,
+		"NAME":                             true,
+		"NAMES":                            true,
+		"NAMESPACE":                        true,
+		"NATIONAL":                         true,
+		"NATURAL":                          true,
+		"NCHAR":                            true,
+		"NCLOB":                            true,
+		"NESTING":                          true,
+		"NEW":                              true,
+		"NEXT":                             true,
+		"NFC":                              true,
+		"NFD":                              true,
+		"NFKC":                             true,
+		"NFKD":                             true,
+		"NIL":                              true,
+		"NO":                               true,
+		"NONE":                             true,
+		"NORMALIZE":                        true,
+		"NORMALIZED":                       true,
+		"NOT":                              true,
+		"NOTHING":                          true,
+		"NOTIFY":                           true,
+		"NOTNULL":                          true,
+		"NOWAIT":                           true,
+		"NTH_VALUE":                        true,
+		"NTILE":                            true,
+		"NULL":                             true,
+		"NULLABLE":                         true,
+		"NULLIF":                           true,
+		"NULLS":                            true,
+		"NUMBER":                           true,
+		"NUMERIC":                          true,
+		"OBJECT":                           true,
+		"OCCURRENCES_REGEX":                true,
+		"OCTETS":                           true,
+		"OCTET_LENGTH":                     true,
+		"OF":                               true,
+		"OFF":                              true,
+		"OFFSET":                           true,
+		"OIDS":                             true,
+		"OLD":                              true,
+		"ON":                               true,
+		"ONLY":                             true,
+		"OPEN":                             true,
+		"OPERATOR":                         true,
+		"OPTION":                           true,
+		"OPTIONS":                          true,
+		"OR":                               true,
+		"ORDER":                            true,
+		"ORDERING":                         true,
+		"ORDINALITY":                       true,
+		"OTHERS":                           true,
+		"OUT":                              true,
+		"OUTER":                            true,
+		"OUTPUT":                           true,
+		"OVER":                             true,
+		"OVERLAPS":                         true,
+		"OVERLAY":                          true,
+		"OVERRIDING":                       true,
+		"OWNED":                            true,
+		"OWNER":                            true,
+		"P":                                true,
+		"PAD":                              true,
+		"PARAMETER":                        true,
+		"PARAMETER_MODE":                   true,
+		"PARAMETER_NAME":                   true,
+		"PARAMETER_ORDINAL_POSITION":       true,
+		"PARAMETER_SPECIFIC_CATALOG":       true,
+		"PARAMETER_SPECIFIC_NAME":          true,
+		"PARAMETER_SPECIFIC_SCHEMA":        true,
+		"PARSER":                           true,
+		"PARTIAL":                          true,
+		"PARTITION":                        true,
+		"PASCAL":                           true,
+		"PASSING":                          true,
+		"PASSTHROUGH":                      true,
+		"PASSWORD":                         true,
+		"PATH":                             true,
+		"PERCENT":                          true,
+		"PERCENTILE_CONT":                  true,
+		"PERCENTILE_DISC":                  true,
+		"PERCENT_RANK":                     true,
+		"PERIOD":                           true,
+		"PERMISSION":                       true,
+		"PLACING":                          true,
+		"PLANS":                            true,
+		"PLI":                              true,
+		"PORTION":                          true,
+		"POSITION":                         true,
+		"POSITION_REGEX":                   true,
+		"POWER":                            true,
+		"PRECEDES":                         true,
+		"PRECEDING":                        true,
+		"PRECISION":                        true,
+		"PREPARE":                          true,
+		"PREPARED":                         true,
+		"PRESERVE":                         true,
+		"PRIMARY":                          true,
+		"PRIOR":                            true,
+		"PRIVILEGES":                       true,
+		"PROCEDURAL":                       true,
+		"PROCEDURE":                        true,
+		"PROGRAM":                          true,
+		"PUBLIC":                           true,
+		"QUOTE":                            true,
+		"RANGE":                            true,
+		"RANK":                             true,
+		"READ":                             true,
+		"READS":                            true,
+		"REAL":                             true,
+		"REASSIGN":                         true,
+		"RECHECK":                          true,
+		"RECOVERY":                         true,
+		"RECURSIVE":                        true,
+		"REF":                              true,
+		"REFERENCES":                       true,
+		"REFERENCING":                      true,
+		"REFRESH":                          true,
+		"REGR_AVGX":                        true,
+		"REGR_AVGY":                        true,
+		"REGR_COUNT":                       true,
+		"REGR_INTERCEPT":                   true,
+		"REGR_R2":                          true,
+		"REGR_SLOPE":                       true,
+		"REGR_SXX":                         true,
+		"REGR_SXY":                         true,
+		"REGR_SYY":                         true,
+		"REINDEX":                          true,
+		"RELATIVE":                         true,
+		"RELEASE":                          true,
+		"RENAME":                           true,
+		"REPEATABLE":                       true,
+		"REPLACE":                          true,
+		"REPLICA":                          true,
+		"REQUIRING":                        true,
+		"RESET":                            true,
+		"RESPECT":                          true,
+		"RESTART":                          true,
+		"RESTORE":                          true,
+		"RESTRICT":                         true,
+		"RESULT":                           true,
+		"RETURN":                           true,
+		"RETURNED_CARDINALITY":             true,
+		"RETURNED_LENGTH":                  true,
+		"RETURNED_OCTET_LENGTH":            true,
+		"RETURNED_SQLSTATE":                true,
+		"RETURNING":                        true,
+		"RETURNS":                          true,
+		"REVOKE":                           true,
+		"RIGHT":                            true,
+		"ROLE":                             true,
+		"ROLLBACK":                         true,
+		"ROLLUP":                           true,
+		"ROUTINE":                          true,
+		"ROUTINE_CATALOG":                  true,
+		"ROUTINE_NAME":                     true,
+		"ROUTINE_SCHEMA":                   true,
+		"ROW":                              true,
+		"ROWS":                             true,
+		"ROW_COUNT":                        true,
+		"ROW_NUMBER":                       true,
+		"RULE":                             true,
+		"SAVEPOINT":                        true,
+		"SCALE":                            true,
+		"SCHEMA":                           true,
+		"SCHEMA_NAME":                      true,
+		"SCOPE":                            true,
+		"SCOPE_CATALOG":                    true,
+		"SCOPE_NAME":                       true,
+		"SCOPE_SCHEMA":                     true,
+		"SCROLL":                           true,
+		"SEARCH":                           true,
+		"SECOND":                           true,
+		"SECTION":                          true,
+		"SECURITY":                         true,
+		"SELECT":                           true,
+		"SELECTIVE":                        true,
+		"SELF":                             true,
+		"SENSITIVE":                        true,
+		"SEQUENCE":                         true,
+		"SEQUENCES":                        true,
+		"SERIALIZABLE":                     true,
+		"SERVER":                           true,
+		"SERVER_NAME":                      true,
+		"SESSION":                          true,
+		"SESSION_USER":                     true,
+		"SET":                              true,
+		"SETOF":                            true,
+		"SETS":                             true,
+		"SHARE":                            true,
+		"SHOW":                             true,
+		"SIMILAR":                          true,
+		"SIMPLE":                           true,
+		"SIZE":                             true,
+		"SMALLINT":                         true,
+		"SNAPSHOT":                         true,
+		"SOME":                             true,
+		"SOURCE":                           true,
+		"SPACE":                            true,
+		"SPECIFIC":                         true,
+		"SPECIFICTYPE":                     true,
+		"SPECIFIC_NAME":                    true,
+		"SQL":                              true,
+		"SQLCODE":                          true,
+		"SQLERROR":                         true,
+		"SQLEXCEPTION":                     true,
+		"SQLSTATE":                         true,
+		"SQLWARNING":                       true,
+		"SQRT":                             true,
+		"STABLE":                           true,
+		"STANDALONE":                       true,
+		"START":                            true,
+		"STATE":                            true,
+		"STATEMENT":                        true,
+		"STATIC":                           true,
+		"STATISTICS":                       true,
+		"STDDEV_POP":                       true,
+		"STDDEV_SAMP":                      true,
+		"STDIN":                            true,
+		"STDOUT":                           true,
+		"STORAGE":                          true,
+		"STRICT":                           true,
+		"STRIP":                            true,
+		"STRUCTURE":                        true,
+		"STYLE":                            true,
+		"SUBCLASS_ORIGIN":                  true,
+		"SUBMULTISET":                      true,
+		"SUBSTRING":                        true,
+		"SUBSTRING_REGEX":                  true,
+		"SUCCEEDS":                         true,
+		"SUM":                              true,
+		"SYMMETRIC":                        true,
+		"SYSID":                            true,
+		"SYSTEM":                           true,
+		"SYSTEM_TIME":                      true,
+		"SYSTEM_USER":                      true,
+		"T":                                true,
+		"TABLE":                            true,
+		"TABLES":                           true,
+		"TABLESAMPLE":                      true,
+		"TABLESPACE":                       true,
+		"TABLE_NAME":                       true,
+		"TEMP":                             true,
+		"TEMPLATE":                         true,
+		"TEMPORARY":                        true,
+		"TEXT":                             true,
+		"THEN":                             true,
+		"TIES":                             true,
+		"TIME":                             true,
+		"TIMESTAMP":                        true,
+		"TIMEZONE_HOUR":                    true,
+		"TIMEZONE_MINUTE":                  true,
+		"TO":                               true,
+		"TOKEN":                            true,
+		"TOP_LEVEL_COUNT":                  true,
+		"TRAILING":                         true,
+		"TRANSACTION":                      true,
+		"TRANSACTIONS_COMMITTED":           true,
+		"TRANSACTIONS_ROLLED_BACK":         true,
+		"TRANSACTION_ACTIVE":               true,
+		"TRANSFORM":                        true,
+		"TRANSFORMS":                       true,
+		"TRANSLATE":                        true,
+		"TRANSLATE_REGEX":                  true,
+		"TRANSLATION":                      true,
+		"TREAT":                            true,
+		"TRIGGER":                          true,
+		"TRIGGER_CATALOG":                  true,
+		"TRIGGER_NAME":                     true,
+		"TRIGGER_SCHEMA":                   true,
+		"TRIM":                             true,
+		"TRIM_ARRAY":                       true,
+		"TRUE":                             true,
+		"TRUNCATE":                         true,
+		"TRUSTED":                          true,
+		"TYPE":                             true,
+		"TYPES":                            true,
+		"UESCAPE":                          true,
+		"UNBOUNDED":                        true,
+		"UNCOMMITTED":                      true,
+		"UNDER":                            true,
+		"UNENCRYPTED":                      true,
+		"UNION":                            true,
+		"UNIQUE":                           true,
+		"UNKNOWN":                          true,
+		"UNLINK":                           true,
+		"UNLISTEN":                         true,
+		"UNLOGGED":                         true,
+		"UNNAMED":                          true,
+		"UNNEST":                           true,
+		"UNTIL":                            true,
+		"UNTYPED":                          true,
+		"UPDATE":                           true,
+		"UPPER":                            true,
+		"URI":                              true,
+		"USAGE":                            true,
+		"USER":                             true,
+		"USER_DEFINED_TYPE_CATALOG":        true,
+		"USER_DEFINED_TYPE_CODE":           true,
+		"USER_DEFINED_TYPE_NAME":           true,
+		"USER_DEFINED_TYPE_SCHEMA":         true,
+		"USING":                            true,
+		"VACUUM":                           true,
+		"VALID":                            true,
+		"VALIDATE":                         true,
+		"VALIDATOR":                        true,
+		"VALUE":                            true,
+		"VALUES":                           true,
+		"VALUE_OF":                         true,
+		"VARBINARY":                        true,
+		"VARCHAR":                          true,
+		"VARIADIC":                         true,
+		"VARYING":                          true,
+		"VAR_POP":                          true,
+		"VAR_SAMP":                         true,
+		"VERBOSE":                          true,
+		"VERSION":                          true,
+		"VERSIONING":                       true,
+		"VIEW":                             true,
+		"VOLATILE":                         true,
+		"WHEN":                             true,
+		"WHENEVER":                         true,
+		"WHERE":                            true,
+		"WHITESPACE":                       true,
+		"WIDTH_BUCKET":                     true,
+		"WINDOW":                           true,
+		"WITH":                             true,
+		"WITHIN":                           true,
+		"WITHOUT":                          true,
+		"WORK":                             true,
+		"WRAPPER":                          true,
+		"WRITE":                            true,
+		"XML":                              true,
+		"XMLAGG":                           true,
+		"XMLATTRIBUTES":                    true,
+		"XMLBINARY":                        true,
+		"XMLCAST":                          true,
+		"XMLCOMMENT":                       true,
+		"XMLCONCAT":                        true,
+		"XMLDECLARATION":                   true,
+		"XMLDOCUMENT":                      true,
+		"XMLELEMENT":                       true,
+		"XMLEXISTS":                        true,
+		"XMLFOREST":                        true,
+		"XMLITERATE":                       true,
+		"XMLNAMESPACES":                    true,
+		"XMLPARSE":                         true,
+		"XMLPI":                            true,
+		"XMLQUERY":                         true,
+		"XMLROOT":                          true,
+		"XMLSCHEMA":                        true,
+		"XMLSERIALIZE":                     true,
+		"XMLTABLE":                         true,
+		"XMLTEXT":                          true,
+		"XMLVALIDATE":                      true,
+		"YEAR":                             true,
+		"YES":                              true,
+		"ZONE":                             true,
 	}
+
+	// DefaultPostgresSchema default postgres schema
+	DefaultPostgresSchema = "public"
 )
+
+const postgresPublicSchema = "public"
 
 type postgres struct {
 	core.Base
 }
 
 func (db *postgres) Init(d *core.DB, uri *core.Uri, drivername, dataSourceName string) error {
-	return db.Base.Init(d, db, uri, drivername, dataSourceName)
+	err := db.Base.Init(d, db, uri, drivername, dataSourceName)
+	if err != nil {
+		return err
+	}
+	if db.Schema == "" {
+		db.Schema = DefaultPostgresSchema
+	}
+	return nil
 }
 
 func (db *postgres) SqlType(c *core.Column) string {
@@ -780,6 +791,9 @@ func (db *postgres) SqlType(c *core.Column) string {
 	switch t := c.SQLType.Name; t {
 	case core.TinyInt:
 		res = core.SmallInt
+		return res
+	case core.Bit:
+		res = core.Boolean
 		return res
 	case core.MediumInt, core.Int, core.Integer:
 		if c.IsAutoIncrement {
@@ -808,7 +822,7 @@ func (db *postgres) SqlType(c *core.Column) string {
 	case core.NVarchar:
 		res = core.Varchar
 	case core.Uuid:
-		res = core.Uuid
+		return core.Uuid
 	case core.Blob, core.TinyBlob, core.MediumBlob, core.LongBlob:
 		return core.Bytea
 	case core.Double:
@@ -820,6 +834,10 @@ func (db *postgres) SqlType(c *core.Column) string {
 		res = t
 	}
 
+	if strings.EqualFold(res, "bool") {
+		// for bool, we don't need length information
+		return res
+	}
 	hasLen1 := (c.Length > 0)
 	hasLen2 := (c.Length2 > 0)
 
@@ -845,10 +863,6 @@ func (db *postgres) Quote(name string) string {
 	return "\"" + name + "\""
 }
 
-func (db *postgres) QuoteStr() string {
-	return "\""
-}
-
 func (db *postgres) AutoIncrStr() string {
 	return ""
 }
@@ -866,31 +880,41 @@ func (db *postgres) IndexOnTable() bool {
 }
 
 func (db *postgres) IndexCheckSql(tableName, idxName string) (string, []interface{}) {
-	args := []interface{}{tableName, idxName}
+	if len(db.Schema) == 0 {
+		args := []interface{}{tableName, idxName}
+		return `SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?`, args
+	}
+
+	args := []interface{}{db.Schema, tableName, idxName}
 	return `SELECT indexname FROM pg_indexes ` +
-		`WHERE tablename = ? AND indexname = ?`, args
+		`WHERE schemaname = ? AND tablename = ? AND indexname = ?`, args
 }
 
 func (db *postgres) TableCheckSql(tableName string) (string, []interface{}) {
-	args := []interface{}{tableName}
-	return `SELECT tablename FROM pg_tables WHERE tablename = ?`, args
+	if len(db.Schema) == 0 {
+		args := []interface{}{tableName}
+		return `SELECT tablename FROM pg_tables WHERE tablename = ?`, args
+	}
+
+	args := []interface{}{db.Schema, tableName}
+	return `SELECT tablename FROM pg_tables WHERE schemaname = ? AND tablename = ?`, args
 }
 
-/*func (db *postgres) ColumnCheckSql(tableName, colName string) (string, []interface{}) {
-	args := []interface{}{tableName, colName}
-	return "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = ?" +
-		" AND column_name = ?", args
-}*/
-
 func (db *postgres) ModifyColumnSql(tableName string, col *core.Column) string {
-	return fmt.Sprintf("alter table %s ALTER COLUMN %s TYPE %s",
-		tableName, col.Name, db.SqlType(col))
+	if len(db.Schema) == 0 {
+		return fmt.Sprintf("alter table %s ALTER COLUMN %s TYPE %s",
+			tableName, col.Name, db.SqlType(col))
+	}
+	return fmt.Sprintf("alter table %s.%s ALTER COLUMN %s TYPE %s",
+		db.Schema, tableName, col.Name, db.SqlType(col))
 }
 
 func (db *postgres) DropIndexSql(tableName string, index *core.Index) string {
-	//var unique string
 	quote := db.Quote
 	idxName := index.Name
+
+	tableName = strings.Replace(tableName, `"`, "", -1)
+	tableName = strings.Replace(tableName, `.`, "_", -1)
 
 	if !strings.HasPrefix(idxName, "UQE_") &&
 		!strings.HasPrefix(idxName, "IDX_") {
@@ -900,13 +924,21 @@ func (db *postgres) DropIndexSql(tableName string, index *core.Index) string {
 			idxName = fmt.Sprintf("IDX_%v_%v", tableName, index.Name)
 		}
 	}
+	if db.Uri.Schema != "" {
+		idxName = db.Uri.Schema + "." + idxName
+	}
 	return fmt.Sprintf("DROP INDEX %v", quote(idxName))
 }
 
 func (db *postgres) IsColumnExist(tableName, colName string) (bool, error) {
-	args := []interface{}{tableName, colName}
-	query := "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1" +
-		" AND column_name = $2"
+	args := []interface{}{db.Schema, tableName, colName}
+	query := "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = $1 AND table_name = $2" +
+		" AND column_name = $3"
+	if len(db.Schema) == 0 {
+		args = []interface{}{tableName, colName}
+		query = "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1" +
+			" AND column_name = $2"
+	}
 	db.LogSQL(query, args)
 
 	rows, err := db.DB().Query(query, args...)
@@ -919,9 +951,8 @@ func (db *postgres) IsColumnExist(tableName, colName string) (bool, error) {
 }
 
 func (db *postgres) GetColumns(tableName string) ([]string, map[string]*core.Column, error) {
-	// FIXME: the schema should be replaced by user custom's
-	args := []interface{}{tableName, "public"}
-	s := `SELECT column_name, column_default, is_nullable, data_type, character_maximum_length, numeric_precision, numeric_precision_radix ,
+	args := []interface{}{tableName}
+	s := `SELECT column_name, column_default, is_nullable, data_type, character_maximum_length,
     CASE WHEN p.contype = 'p' THEN true ELSE false END AS primarykey,
     CASE WHEN p.contype = 'u' THEN true ELSE false END AS uniquekey
 FROM pg_attribute f
@@ -931,7 +962,15 @@ FROM pg_attribute f
     LEFT JOIN pg_constraint p ON p.conrelid = c.oid AND f.attnum = ANY (p.conkey)
     LEFT JOIN pg_class AS g ON p.confrelid = g.oid
     LEFT JOIN INFORMATION_SCHEMA.COLUMNS s ON s.column_name=f.attname AND c.relname=s.table_name
-WHERE c.relkind = 'r'::char AND c.relname = $1 AND s.table_schema = $2 AND f.attnum > 0 ORDER BY f.attnum;`
+WHERE c.relkind = 'r'::char AND c.relname = $1%s AND f.attnum > 0 ORDER BY f.attnum;`
+
+	var f string
+	if len(db.Schema) != 0 {
+		args = append(args, db.Schema)
+		f = " AND s.table_schema = $2"
+	}
+	s = fmt.Sprintf(s, f)
+
 	db.LogSQL(s, args)
 
 	rows, err := db.DB().Query(s, args...)
@@ -948,14 +987,14 @@ WHERE c.relkind = 'r'::char AND c.relname = $1 AND s.table_schema = $2 AND f.att
 		col.Indexes = make(map[string]int)
 
 		var colName, isNullable, dataType string
-		var maxLenStr, colDefault, numPrecision, numRadix *string
+		var maxLenStr, colDefault *string
 		var isPK, isUnique bool
-		err = rows.Scan(&colName, &colDefault, &isNullable, &dataType, &maxLenStr, &numPrecision, &numRadix, &isPK, &isUnique)
+		err = rows.Scan(&colName, &colDefault, &isNullable, &dataType, &maxLenStr, &isPK, &isUnique)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		//fmt.Println(args, colName, isNullable, dataType, maxLenStr, colDefault, numPrecision, numRadix, isPK, isUnique)
+		// fmt.Println(args, colName, isNullable, dataType, maxLenStr, colDefault, isPK, isUnique)
 		var maxLen int
 		if maxLenStr != nil {
 			maxLen, err = strconv.Atoi(*maxLenStr)
@@ -966,16 +1005,18 @@ WHERE c.relkind = 'r'::char AND c.relname = $1 AND s.table_schema = $2 AND f.att
 
 		col.Name = strings.Trim(colName, `" `)
 
-		if colDefault != nil || isPK {
-			if isPK {
-				col.IsPrimaryKey = true
-			} else {
-				col.Default = *colDefault
+		if colDefault != nil {
+			col.Default = *colDefault
+			col.DefaultIsEmpty = false
+			if strings.HasPrefix(col.Default, "nextval(") {
+				col.IsAutoIncrement = true
 			}
+		} else {
+			col.DefaultIsEmpty = true
 		}
 
-		if colDefault != nil && strings.HasPrefix(*colDefault, "nextval(") {
-			col.IsAutoIncrement = true
+		if isPK {
+			col.IsPrimaryKey = true
 		}
 
 		col.Nullable = (isNullable == "YES")
@@ -1004,12 +1045,16 @@ WHERE c.relkind = 'r'::char AND c.relname = $1 AND s.table_schema = $2 AND f.att
 
 		col.Length = maxLen
 
-		if col.SQLType.IsText() || col.SQLType.IsTime() {
-			if col.Default != "" {
-				col.Default = "'" + col.Default + "'"
-			} else {
-				if col.DefaultIsEmpty {
-					col.Default = "''"
+		if !col.DefaultIsEmpty {
+			if col.SQLType.IsText() {
+				if strings.HasSuffix(col.Default, "::character varying") {
+					col.Default = strings.TrimRight(col.Default, "::character varying")
+				} else if !strings.HasPrefix(col.Default, "'") {
+					col.Default = "'" + col.Default + "'"
+				}
+			} else if col.SQLType.IsTime() {
+				if strings.HasSuffix(col.Default, "::timestamp without time zone") {
+					col.Default = strings.TrimRight(col.Default, "::timestamp without time zone")
 				}
 			}
 		}
@@ -1021,9 +1066,13 @@ WHERE c.relkind = 'r'::char AND c.relname = $1 AND s.table_schema = $2 AND f.att
 }
 
 func (db *postgres) GetTables() ([]*core.Table, error) {
-	// FIXME: replace public to user customrize schema
-	args := []interface{}{"public"}
-	s := fmt.Sprintf("SELECT tablename FROM pg_tables WHERE schemaname = $1")
+	args := []interface{}{}
+	s := "SELECT tablename FROM pg_tables"
+	if len(db.Schema) != 0 {
+		args = append(args, db.Schema)
+		s = s + " WHERE schemaname = $1"
+	}
+
 	db.LogSQL(s, args)
 
 	rows, err := db.DB().Query(s, args...)
@@ -1046,10 +1095,24 @@ func (db *postgres) GetTables() ([]*core.Table, error) {
 	return tables, nil
 }
 
+func getIndexColName(indexdef string) []string {
+	var colNames []string
+
+	cs := strings.Split(indexdef, "(")
+	for _, v := range strings.Split(strings.Split(cs[1], ")")[0], ",") {
+		colNames = append(colNames, strings.Split(strings.TrimLeft(v, " "), " ")[0])
+	}
+
+	return colNames
+}
+
 func (db *postgres) GetIndexes(tableName string) (map[string]*core.Index, error) {
-	// FIXME: replace the public schema to user specify schema
-	args := []interface{}{"public", tableName}
-	s := fmt.Sprintf("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname=$1 AND tablename=$2")
+	args := []interface{}{tableName}
+	s := fmt.Sprintf("SELECT indexname, indexdef FROM pg_indexes WHERE tablename=$1")
+	if len(db.Schema) != 0 {
+		args = append(args, db.Schema)
+		s = s + " AND schemaname=$2"
+	}
 	db.LogSQL(s, args)
 
 	rows, err := db.DB().Query(s, args...)
@@ -1076,8 +1139,7 @@ func (db *postgres) GetIndexes(tableName string) (map[string]*core.Index, error)
 		} else {
 			indexType = core.IndexType
 		}
-		cs := strings.Split(indexdef, "(")
-		colNames = strings.Split(cs[1][0:len(cs[1])-1], ",")
+		colNames = getIndexColName(indexdef)
 		var isRegular bool
 		if strings.HasPrefix(indexName, "IDX_"+tableName) || strings.HasPrefix(indexName, "UQE_"+tableName) {
 			newIdxName := indexName[5+len(tableName):]
@@ -1114,10 +1176,6 @@ func (vs values) Get(k string) (v string) {
 	return vs[k]
 }
 
-func errorf(s string, args ...interface{}) {
-	panic(fmt.Errorf("pq: %s", fmt.Sprintf(s, args...)))
-}
-
 func parseURL(connstr string) (string, error) {
 	u, err := url.Parse(connstr)
 	if err != nil {
@@ -1128,46 +1186,18 @@ func parseURL(connstr string) (string, error) {
 		return "", fmt.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
-	var kvs []string
 	escaper := strings.NewReplacer(` `, `\ `, `'`, `\'`, `\`, `\\`)
-	accrue := func(k, v string) {
-		if v != "" {
-			kvs = append(kvs, k+"="+escaper.Replace(v))
-		}
-	}
-
-	if u.User != nil {
-		v := u.User.Username()
-		accrue("user", v)
-
-		v, _ = u.User.Password()
-		accrue("password", v)
-	}
-
-	i := strings.Index(u.Host, ":")
-	if i < 0 {
-		accrue("host", u.Host)
-	} else {
-		accrue("host", u.Host[:i])
-		accrue("port", u.Host[i+1:])
-	}
 
 	if u.Path != "" {
-		accrue("dbname", u.Path[1:])
+		return escaper.Replace(u.Path[1:]), nil
 	}
 
-	q := u.Query()
-	for k := range q {
-		accrue(k, q.Get(k))
-	}
-
-	sort.Strings(kvs) // Makes testing easier (not a performance concern)
-	return strings.Join(kvs, " "), nil
+	return "", nil
 }
 
-func parseOpts(name string, o values) {
+func parseOpts(name string, o values) error {
 	if len(name) == 0 {
-		return
+		return fmt.Errorf("invalid options: %s", name)
 	}
 
 	name = strings.TrimSpace(name)
@@ -1176,31 +1206,48 @@ func parseOpts(name string, o values) {
 	for _, p := range ps {
 		kv := strings.Split(p, "=")
 		if len(kv) < 2 {
-			errorf("invalid option: %q", p)
+			return fmt.Errorf("invalid option: %q", p)
 		}
 		o.Set(kv[0], kv[1])
 	}
+
+	return nil
 }
 
 func (p *pqDriver) Parse(driverName, dataSourceName string) (*core.Uri, error) {
 	db := &core.Uri{DbType: core.POSTGRES}
-	o := make(values)
 	var err error
+
 	if strings.HasPrefix(dataSourceName, "postgresql://") || strings.HasPrefix(dataSourceName, "postgres://") {
-		dataSourceName, err = parseURL(dataSourceName)
+		db.DbName, err = parseURL(dataSourceName)
 		if err != nil {
 			return nil, err
 		}
-	}
-	parseOpts(dataSourceName, o)
+	} else {
+		o := make(values)
+		err = parseOpts(dataSourceName, o)
+		if err != nil {
+			return nil, err
+		}
 
-	db.DbName = o.Get("dbname")
+		db.DbName = o.Get("dbname")
+	}
+
 	if db.DbName == "" {
 		return nil, errors.New("dbname is empty")
 	}
-	/*db.Schema = o.Get("schema")
-	if len(db.Schema) == 0 {
-		db.Schema = "public"
-	}*/
+
 	return db, nil
+}
+
+type pqDriverPgx struct {
+	pqDriver
+}
+
+func (pgx *pqDriverPgx) Parse(driverName, dataSourceName string) (*core.Uri, error) {
+	// Remove the leading characters for driver to work
+	if len(dataSourceName) >= 9 && dataSourceName[0] == 0 {
+		dataSourceName = dataSourceName[9:]
+	}
+	return pgx.pqDriver.Parse(driverName, dataSourceName)
 }

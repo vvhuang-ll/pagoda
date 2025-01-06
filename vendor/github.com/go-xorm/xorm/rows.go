@@ -9,16 +9,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-xorm/core"
+	"xorm.io/core"
 )
 
 // Rows rows wrapper a rows to
 type Rows struct {
-	NoTypeCheck bool
-
 	session   *Session
 	rows      *core.Rows
-	fields    []string
 	beanType  reflect.Type
 	lastError error
 }
@@ -32,7 +29,7 @@ func newRows(session *Session, bean interface{}) (*Rows, error) {
 	var args []interface{}
 	var err error
 
-	if err = rows.session.statement.setRefValue(rValue(bean)); err != nil {
+	if err = rows.session.statement.setRefBean(bean); err != nil {
 		return nil, err
 	}
 
@@ -51,13 +48,6 @@ func newRows(session *Session, bean interface{}) (*Rows, error) {
 	}
 
 	rows.rows, err = rows.session.queryRows(sqlStr, args...)
-	if err != nil {
-		rows.lastError = err
-		rows.Close()
-		return nil, err
-	}
-
-	rows.fields, err = rows.rows.Columns()
 	if err != nil {
 		rows.lastError = err
 		rows.Close()
@@ -90,22 +80,31 @@ func (rows *Rows) Scan(bean interface{}) error {
 		return rows.lastError
 	}
 
-	if !rows.NoTypeCheck && reflect.Indirect(reflect.ValueOf(bean)).Type() != rows.beanType {
+	if reflect.Indirect(reflect.ValueOf(bean)).Type() != rows.beanType {
 		return fmt.Errorf("scan arg is incompatible type to [%v]", rows.beanType)
 	}
 
-	dataStruct := rValue(bean)
-	if err := rows.session.statement.setRefValue(dataStruct); err != nil {
+	if err := rows.session.statement.setRefBean(bean); err != nil {
 		return err
 	}
 
-	scanResults, err := rows.session.row2Slice(rows.rows, rows.fields, len(rows.fields), bean)
+	fields, err := rows.rows.Columns()
 	if err != nil {
 		return err
 	}
 
-	_, err = rows.session.slice2Bean(scanResults, rows.fields, len(rows.fields), bean, &dataStruct, rows.session.statement.RefTable)
-	return err
+	scanResults, err := rows.session.row2Slice(rows.rows, fields, bean)
+	if err != nil {
+		return err
+	}
+
+	dataStruct := rValue(bean)
+	_, err = rows.session.slice2Bean(scanResults, fields, bean, &dataStruct, rows.session.statement.RefTable)
+	if err != nil {
+		return err
+	}
+
+	return rows.session.executeProcessors()
 }
 
 // Close session if session.IsAutoClose is true, and claimed any opened resources
@@ -114,17 +113,9 @@ func (rows *Rows) Close() error {
 		defer rows.session.Close()
 	}
 
-	if rows.lastError == nil {
-		if rows.rows != nil {
-			rows.lastError = rows.rows.Close()
-			if rows.lastError != nil {
-				return rows.lastError
-			}
-		}
-	} else {
-		if rows.rows != nil {
-			defer rows.rows.Close()
-		}
+	if rows.rows != nil {
+		return rows.rows.Close()
 	}
+
 	return rows.lastError
 }

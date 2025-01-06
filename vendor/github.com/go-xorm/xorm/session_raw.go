@@ -9,7 +9,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/go-xorm/core"
+	"xorm.io/builder"
+	"xorm.io/core"
 )
 
 func (session *Session) queryPreprocess(sqlStr *string, paramStr ...interface{}) {
@@ -47,28 +48,35 @@ func (session *Session) queryRows(sqlStr string, args ...interface{}) (*core.Row
 	}
 
 	if session.isAutoCommit {
+		var db *core.DB
+		if session.sessionType == groupSession {
+			db = session.engine.engineGroup.Slave().DB()
+		} else {
+			db = session.DB()
+		}
+
 		if session.prepareStmt {
 			// don't clear stmt since session will cache them
-			stmt, err := session.doPrepare(sqlStr)
+			stmt, err := session.doPrepare(db, sqlStr)
 			if err != nil {
 				return nil, err
 			}
 
-			rows, err := stmt.Query(args...)
+			rows, err := stmt.QueryContext(session.ctx, args...)
 			if err != nil {
 				return nil, err
 			}
 			return rows, nil
 		}
 
-		rows, err := session.DB().Query(sqlStr, args...)
+		rows, err := db.QueryContext(session.ctx, sqlStr, args...)
 		if err != nil {
 			return nil, err
 		}
 		return rows, nil
 	}
 
-	rows, err := session.tx.Query(sqlStr, args...)
+	rows, err := session.tx.QueryContext(session.ctx, sqlStr, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +87,12 @@ func (session *Session) queryRow(sqlStr string, args ...interface{}) *core.Row {
 	return core.NewRow(session.queryRows(sqlStr, args...))
 }
 
-func value2Bytes(rawValue *reflect.Value) (data []byte, err error) {
-	var str string
-	str, err = reflect2value(rawValue)
+func value2Bytes(rawValue *reflect.Value) ([]byte, error) {
+	str, err := value2String(rawValue)
 	if err != nil {
-		return
+		return nil, err
 	}
-	data = []byte(str)
-	return
+	return []byte(str), nil
 }
 
 func row2map(rows *core.Rows, fields []string) (resultsMap map[string][]byte, err error) {
@@ -169,29 +175,52 @@ func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, er
 	}
 
 	if !session.isAutoCommit {
-		return session.tx.Exec(sqlStr, args...)
+		return session.tx.ExecContext(session.ctx, sqlStr, args...)
 	}
 
 	if session.prepareStmt {
-		stmt, err := session.doPrepare(sqlStr)
+		stmt, err := session.doPrepare(session.DB(), sqlStr)
 		if err != nil {
 			return nil, err
 		}
 
-		res, err := stmt.Exec(args...)
+		res, err := stmt.ExecContext(session.ctx, args...)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
 	}
 
-	return session.DB().Exec(sqlStr, args...)
+	return session.DB().ExecContext(session.ctx, sqlStr, args...)
+}
+
+func convertSQLOrArgs(sqlOrArgs ...interface{}) (string, []interface{}, error) {
+	switch sqlOrArgs[0].(type) {
+	case string:
+		return sqlOrArgs[0].(string), sqlOrArgs[1:], nil
+	case *builder.Builder:
+		return sqlOrArgs[0].(*builder.Builder).ToSQL()
+	case builder.Builder:
+		bd := sqlOrArgs[0].(builder.Builder)
+		return bd.ToSQL()
+	}
+
+	return "", nil, ErrUnSupportedType
 }
 
 // Exec raw sql
-func (session *Session) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
+func (session *Session) Exec(sqlOrArgs ...interface{}) (sql.Result, error) {
 	if session.isAutoClose {
 		defer session.Close()
+	}
+
+	if len(sqlOrArgs) == 0 {
+		return nil, ErrUnSupportedType
+	}
+
+	sqlStr, args, err := convertSQLOrArgs(sqlOrArgs...)
+	if err != nil {
+		return nil, err
 	}
 
 	return session.exec(sqlStr, args...)
